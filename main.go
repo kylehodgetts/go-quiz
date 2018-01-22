@@ -1,63 +1,31 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path"
-	s "strings"
+
+	"kylehodgetts.com/go-quiz/quiz"
+	"kylehodgetts.com/go-quiz/timer"
 )
 
 var (
-	timeLimit = flag.Int("timelimit", 10, "Time limit on the quiz")
-	quizFile  = flag.String("file", path.Join("data", "problems.csv"), "File path to quiz")
+	timeLimit = flag.Int("timelimit", 30, "Time limit on the quiz")
+	quizFile  = flag.String("csv", path.Join("data", "problems.csv"), "File path to quiz")
 )
-
-type Question struct {
-	Question string
-	Answer   string
-}
-
-func parseQuestions() []Question {
-	bytes, err := ioutil.ReadFile(*quizFile)
-	if err != nil {
-		panic("Cannot read quiz file")
-	}
-
-	contents := string(bytes)
-	lines := s.Split(contents, "\n")
-
-	questions := make([]Question, len(lines))
-	for i, line := range lines {
-		qa := s.Split(line, ",")
-		questions[i] = Question{qa[0], qa[1]}
-	}
-
-	return questions
-}
 
 func main() {
 	flag.Parse()
-	questions := parseQuestions()
-	scanner := bufio.NewScanner(os.Stdin)
-
+	questions := quiz.ParseQuestions(quizFile)
 	correctAnswers := 0
 	totalQuestions := len(questions)
 
-	for _, question := range questions {
-		fmt.Printf("%s: ", question.Question)
-		read := scanner.Scan()
-		if !read {
-			fmt.Println("Couldn't read your answer. Moving on")
-			continue
-		}
-		inputAnswer := scanner.Text()
-		if inputAnswer == question.Answer {
-			correctAnswers++
-		}
-	}
+	endQuiz := make(chan bool)
+
+	go quiz.StartQuiz(questions, endQuiz)
+	go timer.StartTimer(*timeLimit, endQuiz)
+
+	<-endQuiz
 
 	fmt.Printf("You got %d/%d answers correct\n", correctAnswers, totalQuestions)
 }
