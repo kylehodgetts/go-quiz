@@ -12,6 +12,6 @@
 `./go-quiz [-csv path to problems csv | -timelimit int time limit]`
 
 ### Docker
-`docker run -it go-quiz -csv problems.csv`
-- Container has a default problems csv file in the root.
+`docker run -it go-quiz`
+- Container has to use default quiz file.
 - Cannot pass a custom csv file with Docker yet. May add it later.
