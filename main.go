@@ -17,13 +17,17 @@ var (
 	correctAnswers = 0
 )
 
+const (
+	welcomeMessage = "You have %d seconds to answer %d questions. Press any key to begin.\n"
+	endQuizMessage = "You got %d/%d answers correct\n"
+)
+
 func StartTimer(timeLimit time.Duration, stop chan<- bool) {
 	time.Sleep(time.Duration(timeLimit * time.Second))
 	stop <- true
 }
 
-func StartQuiz(questions []quiz.Question, stop chan<- bool) {
-	scanner := bufio.NewScanner(os.Stdin)
+func StartQuiz(questions []quiz.Question, scanner *bufio.Scanner, stop chan<- bool) {
 	for i, question := range questions {
 		fmt.Printf("#%d: %s = ", i+1, question.Question)
 
@@ -44,12 +48,13 @@ func main() {
 	flag.Parse()
 	questions := quiz.ParseQuestions(quizFile)
 	endQuiz := make(chan bool)
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Printf(welcomeMessage, *timeLimit, len(questions))
 
-	fmt.Printf("You have %d seconds to answer %d questions. GO!\n", *timeLimit, len(questions))
-	go StartQuiz(questions, endQuiz)
+	go StartQuiz(questions, scanner, endQuiz)
 	go StartTimer(time.Duration(*timeLimit), endQuiz)
 
 	<-endQuiz
 
-	fmt.Printf("You got %d/%d answers correct\n", correctAnswers, len(questions))
+	fmt.Printf(endQuizMessage, correctAnswers, len(questions))
 }
